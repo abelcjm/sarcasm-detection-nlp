@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sarcasm Detection System - CS190</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+    <header>
+        <h1>Sarcasm Detection Supplemental Solution</h1>
+        <p>CS190-2P/CS190-3P Final Course Assessment</p>
+    </header>
+
+    <nav>
+		<a href="/">The Detector</a>
+		<a href="/about">Project Documentation</a>
+	</nav>
+
+    <div class="container">
+        
+        <div id="problem" class="section">
+            <h2>About the Problem</h2>
+            <p>Sarcasm is a sophisticated form of speech where the intended meaning is the opposite of the literal words used. In real-world scenarios like <strong>social media monitoring</strong> or <strong>customer feedback analysis</strong>, failing to detect sarcasm leads to inaccurate sentiment data. This web application serves as a supplementary solution to bridge that gap.</p>
+        </div>
+
+        <div id="detector" class="section">
+            <h2>Text Analysis</h2>
+            <form action="/predict" method="post">
+                <label for="text_input">Enter a sentence to analyze:</label>
+                <textarea id="text_input" name="text" rows="3" required placeholder="e.g., Oh, I love staying up all night doing documentation...">{{ user_input if user_input else '' }}</textarea>
+                <button type="submit">Analyze</button>
+            </form>
+
+            {% if ensemble_result %}
+            <div class="results-container">
+                <div class="model-card">
+                    <h3>Ensemble Model</h3>
+                    <p><strong>Result:</strong> 
+                        <span class="badge {{ 'sarcastic' if ensemble_result.prediction == 'Sarcastic' else 'not-sarcastic' }}">
+                            {{ ensemble_result.prediction }}
+                        </span>
+                    </p>
+                    <p><small>{{ ensemble_result.description }}</small></p>
+                </div>
+
+                <div class="model-card">
+                    <h3>Neural Network (LSTM)</h3>
+                    <p><strong>Result:</strong> 
+                        <span class="badge {{ 'sarcastic' if nn_result.prediction == 'Sarcastic' else 'not-sarcastic' }}">
+                            {{ nn_result.prediction }}
+                        </span>
+                    </p>
+                    <p><strong>Confidence:</strong> {{ nn_result.confidence }}</p>
+                    <p><small>{{ nn_result.description }}</small></p>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <div id="model" class="section">
+            <h2>Model Architecture & Methodology</h2>
+            <p>Following the course requirements, this system integrates two distinct mathematical modeling techniques:</p>
+            <ul>
+                <li><strong>Ensemble Technique:</strong> Uses a <strong>Random Forest</strong> classifier which processes TF-IDF vectorized text through multiple decision trees.</li>
+                <li><strong>Neural Network:</strong> A <strong>Long Short-Term Memory (LSTM)</strong> dense-layer based network designed to capture sequential dependencies in text.</li>
+                <li><strong>Dataset:</strong> Trained using a balanced sarcasm dataset to ensure unbiased classification performance.</li>
+            </ul>
+        </div>
+
+    </div>
+
+</body>
+</html>

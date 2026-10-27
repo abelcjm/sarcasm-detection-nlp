@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Documentation - Sarcasm Detection</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        /* Extra styles specifically for the documentation images */
+        .doc-image {
+            width: 100%;
+            max-width: 600px;
+            display: block;
+            margin: 20px auto;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        .comparison-table th, .comparison-table td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: left;
+        }
+        .comparison-table th {
+            background-color: #0066cc;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Project Documentation</h1>
+        <p>CS190-2P/CS190-3P Final Course Assessment</p>
+    </header>
+
+    <nav>
+        <a href="/">Back to Detector</a>
+        <a href="#dataset">Dataset</a>
+        <a href="#architecture">Architecture</a>
+        <a href="#optimization">Optimization</a>
+        <a href="#metrics">Metrics & Visuals</a>
+    </nav>
+
+    <div class="container">
+        
+        <div id="dataset" class="section">
+            <h2>Dataset Selection & Preparation</h2>
+            <p>To train our models, we utilized the <strong>SARC (Sarcasm on Reddit)</strong> dataset. This dataset is highly reliable as it relies on self-reported sarcasm (users explicitly appending the <code>/s</code> tag to their posts).</p>
+            <ul>
+                <li><strong>Class Balancing:</strong> The original dataset contained over a million records. To prevent severe hardware bottlenecks and model bias, we extracted a perfectly balanced sample of 100,000 records (50,000 sarcastic, 50,000 normal).</li>
+                <li><strong>Preprocessing Pipeline:</strong> Real-world internet data is noisy. We built a Python pipeline to strip URLs, remove subreddit references, eliminate special characters, and convert all text to lowercase before vectorization.</li>
+            </ul>
+        </div>
+
+        <div id="architecture" class="section">
+            <h2>Model Architecture: The Sarcasm Challenge</h2>
+            <p>Sarcasm is fundamentally difficult for natural language processing because it is not about the words themselves, but the <em>order and context</em> of those words. This required testing two distinct mathematical approaches:</p>
+            
+            <table class="comparison-table">
+                <tr>
+                    <th>Model Strategy</th>
+                    <th>Text Processing</th>
+                    <th>Outcome & Insight</th>
+                </tr>
+                <tr>
+                    <td><strong>Ensemble (Random Forest)</strong></td>
+                    <td>TF-IDF Vectorization</td>
+                    <td>Achieved 65.18% accuracy. Struggled with a high False Negative rate (missing nearly 5,000 sarcastic comments). Because TF-IDF ignores word order, the model had to base decisions purely on sarcastic trigger words.</td>
+                </tr>
+                <tr>
+                    <td><strong>Neural Network (LSTM)</strong></td>
+                    <td>Word Embeddings</td>
+                    <td><strong>Highly Successful (69.74%).</strong> LSTMs read sequences and remember past context. This allowed the model to understand structural sarcasm (e.g., positive premise, negative punchline).</td>
+                </tr>
+            </table>
+        </div>
+		
+		<div id="optimization" class="section">
+            <h2>Optimization & Model Selection</h2>
+            <p>Before finalizing our architecture, we attempted several advanced ensemble techniques to push past the 65% baseline. Documenting these failures provided critical insights into the nature of sarcasm detection:</p>
+            <ul>
+                <li><strong>Voting Classifier Attempt:</strong> We attempted to combine Logistic Regression, Naive Bayes, and Random Forest. However, holding three distinct algorithms and a massive TF-IDF matrix simultaneously exceeded cloud hardware limits, resulting in a system crash.</li>
+                <li><strong>AdaBoost Attempt:</strong> To fix the hardware crash, we utilized AdaBoost, which is RAM-friendly. It performed poorly (56.83% accuracy). AdaBoost relies on single-feature splits ("stumps"). This proved that sarcasm cannot be detected by looking at single words in isolation; it requires multi-word context.</li>
+                <li><strong>Final Selection:</strong> Due to the contextual limits of AdaBoost and the hardware constraints of the Voting Classifier, we locked in the original <strong>Random Forest</strong> as our official Ensemble model, as it provided the best balance of multi-feature analysis and stability.</li>
+            </ul>
+        </div>
+
+        <div id="metrics" class="section">
+            <h2>Visual Proof & Metrics</h2>
+            <p>Below are the exported metrics from our Google Colab training environment, demonstrating how we diagnosed and solved overfitting issues.</p>
+			
+			<h3>1. Baseline Model Diagnosis</h3>
+            <p>To understand why standard text processing struggles with sarcasm, we first evaluated a baseline Feed-Forward Neural Network using TF-IDF vectorization. As the graph below illustrates, the training accuracy climbs steadily past 80%, while the validation accuracy stagnates at ~66.8%. This sharp divergence is a textbook example of overfitting—proving the model simply memorized the training vocabulary rather than learning the structural context required for sarcasm.</p>
+            
+            <div style="background: #eee; padding: 40px; text-align: center; border: 2px dashed #ccc; margin: 20px 0;">
+                <img src="{{ url_for('static', filename='acc.png') }}" alt="Accuracy" class="doc-image">
+            </div>
+            
+            <h3>2. Overfitting Prevention (Early Stopping)</h3>
+            <p>When training the LSTM, the model began memorizing the training data around Epoch 4. We implemented an <code>EarlyStopping</code> callback to halt training the moment validation accuracy plateaued, ensuring the model generalizes well to new text.</p>
+            <div style="background: #eee; padding: 40px; text-align: center; border: 2px dashed #ccc; margin: 20px 0;">
+                <img src="{{ url_for('static', filename='LSTM_Graph.png') }}" alt="LSTM Training Graph" class="doc-image">
+            </div>
+
+            <h3>3. Model Confusion Matrices</h3>
+            <p>The matrices below illustrate exactly where the models succeed and fail. The Random Forest suffered from a high False Negative rate (failing to detect complex sarcasm), while the LSTM maintained a much healthier balance.</p>
+            <div style="background: #eee; padding: 40px; text-align: center; border: 2px dashed #ccc; margin: 20px 0;">
+                <img src="{{ url_for('static', filename='confusion.png') }}" alt="Confusion Matrix" class="doc-image">
+            </div>
+			<div style="background: #eee; padding: 40px; text-align: center; border: 2px dashed #ccc; margin: 20px 0;">
+                <img src="{{ url_for('static', filename='confusion2.png') }}" alt="Confusion Matrix 1" class="doc-image">
+            </div>
+        </div>
+
+    </div>
+
+</body>
+</html>
